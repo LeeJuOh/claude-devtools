@@ -156,6 +156,8 @@ const electronAPI: ElectronAPI = {
   getRepositoryGroups: () => ipcRenderer.invoke('get-repository-groups'),
   getWorktreeSessions: (worktreeId: string) =>
     ipcRenderer.invoke('get-worktree-sessions', worktreeId),
+  refreshRepositoryGroup: (repoBaseId: string) =>
+    ipcRenderer.invoke('refresh-repository-group', repoBaseId),
 
   // Validation methods
   validatePath: (relativePath: string, projectPath: string) =>
@@ -172,8 +174,7 @@ const electronAPI: ElectronAPI = {
     ipcRenderer.invoke('read-mentioned-file', absolutePath, projectRoot, maxTokens),
 
   // Agent config reading
-  readAgentConfigs: (projectRoot: string) =>
-    ipcRenderer.invoke('read-agent-configs', projectRoot),
+  readAgentConfigs: (projectRoot: string) => ipcRenderer.invoke('read-agent-configs', projectRoot),
 
   // Notifications API
   notifications: {

@@ -355,6 +355,7 @@ export interface ElectronAPI {
   // Repository grouping (worktree support)
   getRepositoryGroups: () => Promise<RepositoryGroup[]>;
   getWorktreeSessions: (worktreeId: string) => Promise<Session[]>;
+  refreshRepositoryGroup: (repoBaseId: string) => Promise<RepositoryGroup | null>;
 
   // Validation methods
   validatePath: (

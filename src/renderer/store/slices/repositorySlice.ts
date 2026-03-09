@@ -28,6 +28,7 @@ export interface RepositorySlice {
 
   // Actions
   fetchRepositoryGroups: () => Promise<void>;
+  refreshWorktreesForRepo: (repoBaseId: string) => Promise<void>;
   selectRepository: (repositoryId: string) => void;
   selectWorktree: (worktreeId: string) => void;
   setViewMode: (mode: 'flat' | 'grouped') => void;
@@ -62,6 +63,20 @@ export const createRepositorySlice: StateCreator<AppState, [], [], RepositorySli
           error instanceof Error ? error.message : 'Failed to fetch repository groups',
         repositoryGroupsLoading: false,
       });
+    }
+  },
+
+  // Refresh worktrees for a single repository (lightweight, prefix-scoped scan)
+  refreshWorktreesForRepo: async (repoBaseId: string) => {
+    try {
+      const updated = await api.refreshRepositoryGroup(repoBaseId);
+      if (!updated) return;
+
+      set((state) => ({
+        repositoryGroups: state.repositoryGroups.map((g) => (g.id === updated.id ? updated : g)),
+      }));
+    } catch (error) {
+      logger.warn('Failed to refresh worktrees for repo:', error);
     }
   },
 

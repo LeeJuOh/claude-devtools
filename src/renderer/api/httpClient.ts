@@ -270,6 +270,11 @@ export class HttpAPIClient implements ElectronAPI {
   getWorktreeSessions = (worktreeId: string): Promise<Session[]> =>
     this.get<Session[]>(`/api/worktrees/${encodeURIComponent(worktreeId)}/sessions`);
 
+  refreshRepositoryGroup = (repoBaseId: string): Promise<RepositoryGroup | null> =>
+    this.get<RepositoryGroup | null>(
+      `/api/repository-groups/${encodeURIComponent(repoBaseId)}/refresh`
+    );
+
   // ---------------------------------------------------------------------------
   // Validation
   // ---------------------------------------------------------------------------
