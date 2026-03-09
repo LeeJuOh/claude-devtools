@@ -209,6 +209,7 @@ export const SidebarHeader = (): React.JSX.Element => {
     activeProjectId,
     setActiveProject,
     fetchRepositoryGroups,
+    refreshWorktreesForRepo,
     fetchProjects,
     toggleSidebar,
   } = useStore(
@@ -223,6 +224,7 @@ export const SidebarHeader = (): React.JSX.Element => {
       activeProjectId: s.activeProjectId,
       setActiveProject: s.setActiveProject,
       fetchRepositoryGroups: s.fetchRepositoryGroups,
+      refreshWorktreesForRepo: s.refreshWorktreesForRepo,
       fetchProjects: s.fetchProjects,
       toggleSidebar: s.toggleSidebar,
     }))
@@ -443,9 +445,19 @@ export const SidebarHeader = (): React.JSX.Element => {
       {viewMode === 'grouped' && activeRepo && (
         <div ref={worktreeDropdownRef} className="relative w-full">
           <button
-            onClick={() =>
-              hasMultipleWorktrees && setIsWorktreeDropdownOpen(!isWorktreeDropdownOpen)
-            }
+            onClick={() => {
+              if (hasMultipleWorktrees) {
+                const willOpen = !isWorktreeDropdownOpen;
+                setIsWorktreeDropdownOpen(willOpen);
+                if (willOpen && activeRepo) {
+                  const mainWt = activeRepo.worktrees.find((w) => w.isMainWorktree);
+                  const baseId = (mainWt ?? activeRepo.worktrees[0])?.id;
+                  if (baseId) {
+                    void refreshWorktreesForRepo(baseId);
+                  }
+                }
+              }
+            }}
             disabled={!hasMultipleWorktrees}
             className={`flex w-full items-center justify-between px-4 text-left transition-colors ${hasMultipleWorktrees ? 'cursor-pointer' : 'cursor-default'}`}
             style={{
