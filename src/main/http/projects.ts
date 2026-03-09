@@ -5,6 +5,7 @@
  * - GET /api/projects - List all projects
  * - GET /api/repository-groups - List projects grouped by git repository
  * - GET /api/worktrees/:id/sessions - List sessions for a worktree
+ * - GET /api/repository-groups/:id/refresh - Refresh a single repo group
  */
 
 import { createLogger } from '@shared/utils/logger';
@@ -50,6 +51,23 @@ export function registerProjectRoutes(app: FastifyInstance, services: HttpServic
     } catch (error) {
       logger.error(`Error in GET /api/worktrees/${request.params.id}/sessions:`, error);
       return [];
+    }
+  });
+
+  app.get<{ Params: { id: string } }>('/api/repository-groups/:id/refresh', async (request) => {
+    try {
+      const validated = validateProjectId(request.params.id);
+      if (!validated.valid) {
+        logger.error(
+          `GET /api/repository-groups/:id/refresh rejected: ${validated.error ?? 'unknown'}`
+        );
+        return null;
+      }
+
+      return await services.projectScanner.refreshRepositoryGroup(validated.value!);
+    } catch (error) {
+      logger.error(`Error in GET /api/repository-groups/${request.params.id}/refresh:`, error);
+      return null;
     }
   });
 }

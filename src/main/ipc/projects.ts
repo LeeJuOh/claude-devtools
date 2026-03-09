@@ -5,6 +5,7 @@
  * - get-projects: List all projects
  * - get-repository-groups: List projects grouped by git repository
  * - get-worktree-sessions: List sessions for a specific worktree
+ * - refresh-repository-group: Re-scan a single repo's worktrees
  */
 
 import { createLogger } from '@shared/utils/logger';
@@ -35,6 +36,7 @@ export function registerProjectHandlers(ipcMain: IpcMain): void {
   ipcMain.handle('get-projects', handleGetProjects);
   ipcMain.handle('get-repository-groups', handleGetRepositoryGroups);
   ipcMain.handle('get-worktree-sessions', handleGetWorktreeSessions);
+  ipcMain.handle('refresh-repository-group', handleRefreshRepositoryGroup);
 
   logger.info('Project handlers registered');
 }
@@ -46,6 +48,7 @@ export function removeProjectHandlers(ipcMain: IpcMain): void {
   ipcMain.removeHandler('get-projects');
   ipcMain.removeHandler('get-repository-groups');
   ipcMain.removeHandler('get-worktree-sessions');
+  ipcMain.removeHandler('refresh-repository-group');
 
   logger.info('Project handlers removed');
 }
@@ -108,5 +111,29 @@ async function handleGetWorktreeSessions(
   } catch (error) {
     logger.error(`Error in get-worktree-sessions for ${worktreeId}:`, error);
     return [];
+  }
+}
+
+/**
+ * Handler for 'refresh-repository-group' IPC call.
+ * Re-scans only directories matching the given base project ID prefix
+ * and returns an updated RepositoryGroup.
+ */
+async function handleRefreshRepositoryGroup(
+  _event: IpcMainInvokeEvent,
+  repoBaseId: string
+): Promise<RepositoryGroup | null> {
+  try {
+    const validated = validateProjectId(repoBaseId);
+    if (!validated.valid) {
+      logger.error(`refresh-repository-group rejected: ${validated.error ?? 'Invalid repoBaseId'}`);
+      return null;
+    }
+
+    const { projectScanner } = registry.getActive();
+    return await projectScanner.refreshRepositoryGroup(validated.value!);
+  } catch (error) {
+    logger.error(`Error in refresh-repository-group for ${repoBaseId}:`, error);
+    return null;
   }
 }

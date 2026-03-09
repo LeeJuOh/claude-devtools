@@ -188,6 +188,54 @@ export class ProjectScanner {
   }
 
   /**
+   * Refreshes a single repository group by re-scanning only directories
+   * that match the given base encoded project ID prefix.
+   *
+   * @param repoBaseId - Encoded project ID of the main worktree (used as prefix filter)
+   * @returns Updated RepositoryGroup or null if no matching directories
+   */
+  async refreshRepositoryGroup(repoBaseId: string): Promise<RepositoryGroup | null> {
+    try {
+      if (!(await this.fsProvider.exists(this.projectsDir))) {
+        return null;
+      }
+
+      const entries = await this.fsProvider.readdir(this.projectsDir);
+
+      // Filter to directories matching the prefix (main repo + its worktrees)
+      const matchingDirs = entries.filter(
+        (entry) =>
+          entry.isDirectory() &&
+          isValidEncodedPath(entry.name) &&
+          (entry.name === repoBaseId || entry.name.startsWith(`${repoBaseId}-`))
+      );
+
+      if (matchingDirs.length === 0) {
+        return null;
+      }
+
+      // Build Project[] from matching directories only
+      const projectArrays = await this.collectFulfilledInBatches(
+        matchingDirs,
+        this.fsProvider.type === 'ssh' ? 8 : 24,
+        async (dir) => this.scanProject(dir.name)
+      );
+
+      const projects = projectArrays.flat();
+      if (projects.length === 0) {
+        return null;
+      }
+
+      // Group and return the first (only) repository group
+      const groups = await this.worktreeGrouper.groupByRepository(projects);
+      return groups[0] ?? null;
+    } catch (error) {
+      logger.error(`Error refreshing repository group for ${repoBaseId}:`, error);
+      return null;
+    }
+  }
+
+  /**
    * Lists sessions for a specific worktree within a repository group.
    * This is a convenience method that delegates to listSessions since
    * worktree.id is the same as project.id.
